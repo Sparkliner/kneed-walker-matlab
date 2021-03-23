@@ -1,0 +1,3 @@
+[submodule "MATLAB/OptimTraj(MPeterKelly)"]
+	path = MATLAB/OptimTraj(MPeterKelly)
+	url = https://github.com/MatthewPeterKelly/OptimTraj

@@ -6,14 +6,14 @@ jointPositions = Xf(JointAngleCellPre{:});
 X(numlinks) = wrapToPi(X(numlinks));
 steplength = jointPositions(2,end) + (X(1))*R -(X(numlinks) - pi)*R; %don't need to account for R as only y matters here
 
-thetanew = fliplr(wrapToPi(X(1:numlinks)-pi)); %new angle is old-pi, then flipped so first is last etc.
+thetanew = flipud(wrapToPi(X(1:numlinks)-pi)); %new angle is old-pi, then flipped so first is last etc.
 
 M = Mf(JointAngleCellPre{:}); %Inertia about old stance foot, in old coordinates
 
 J = Jf(JointAngleCellPre{:}); %Jacobian of old stance foot, in old coordinates
 J = J(1:2,:); %only consider translation in x and y for 2 dimensional system
 
-Omegapre = X(numlinks+1:end)';
+Omegapre = X(numlinks+1:end);
 
 lhs = [M, -J';J, zeros(size(J,1))];
 rhs = [M*Omegapre;zeros(size(J,1),1)];
@@ -26,9 +26,9 @@ omegaF = lhs'*((lhs*lhs')\rhs);
 Omegapost_oldc = omegaF(1:numlinks,:); %new velocities in old coordinates;
 F = [omegaF(numlinks+1:end,:); 0];
 
-Omegapost = fliplr(Omegapost_oldc'); %coordinates are flipped
+Omegapost = flipud(Omegapost_oldc); %coordinates are flipped
 
-Xnew = [thetanew,Omegapost];
+Xnew = [thetanew;Omegapost];
 
 end
 
