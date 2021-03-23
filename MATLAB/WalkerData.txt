@@ -1,0 +1,10 @@
+// List links in order from initial stance leg
+// Assume same foot radius for both legs
+// Foot_radius(first only)(R), length(l), mass(m), COMx(cn), COMy(wn), radius_of_gyration(rg)
+// based on 70 kg human
+.56, 0.553, 4.27, 0.2179, 0, 0.230
+NA, 0.558, 7, 0.3164, 0, 0.1802
+// Hip is a point mass, denoted by l=0,com=0,rgyr=0
+NA, 0, 34.79, 0, 0, 0
+NA, 0.558, 7, 0.2416, 0, 0.1802
+NA, 0.553, 4.27, 0.3351, 0, 0.2300
