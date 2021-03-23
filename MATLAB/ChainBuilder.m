@@ -104,16 +104,6 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
 
     v = cross(th_d,r) + tmp4;
     
-    %translational kinetic energy
-    tmp = repmat(m,[3,1]).*v.*v;
-    Kin_t = sum(tmp(:));
-    
-    %rotational kinetic energy
-    Kin_r = sum(m.*rg.*rg.*th_d(3,:).*th_d(3,:));
-    
-    %total kinetic energy
-    Kin_e = Kin_t + Kin_r;
-    
     %angular momentum about joint n
     tmp = repmat(m,[3 1]).*v; %m*v
     tmp = cumsum(tmp(:,2:numlinks),2,'reverse'); %sum n+1 to N
@@ -122,8 +112,8 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
     
     hn_minus_hnplus1 = repmat(m.*rg.^2,[3 1]).*th_d + repmat(m,[3 1]).*cross(r,v) + tmp;
     Hsym = cumsum(hn_minus_hnplus1,2,'reverse');
-    Hsym = Hsym(3,:);   
-   
+    Hsym = Hsym(3,:);
+    
     %accel of links
     tmp = cumsum(cross(th_dd,lp),2); %sum p = 1:n
     tmp2 = [zeros(3,1), tmp(:,1:numlinks-1)]; %sum p = 1:n-1
@@ -141,7 +131,11 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
 
     %change in angular momentum
     lhs = repmat(m.*rg.^2,[3 1]).*th_dd + repmat(m,[3 1]).*cross(r,vd) + tmp;
-   
+
+    %Hdsym = lhs(3,:);
+    %Hdsym = reshape(Hdsym,numlinks,1);
+    
+    
     %lhs is in terms of both omega^2 and omega dot right now.
 
     %set omega to 0 to find M matrix
@@ -174,15 +168,11 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
     tmp = cumsum(tmp(:,2:numlinks),2,'reverse'); %sum n+1 to N
     tmp = [tmp, zeros(3,1)].*lp; %sum n+1 to N
 
-    %gravity vector
+    %torques (currently due to weight only)
     rhs = cross((repmat(m,[3 1]).*r + tmp),repmat(gvec,[1 numlinks]));
     Tsym = rhs(3,:)';
 
-    %gravitational potential energy
-    tmp = [zeros(3,1),lp(:,1:end-1)]; %location of bottommost N-1 joints
-    tmp = -1*(r+tmp).*repmat(gvec,[1 numlinks]); %centers of mass, dot with negative gravity vector
-    Pot_e = sum(tmp(:));
-    
+
     %Jacobian
     %Consider bottom of circular foot the end effector location for this
     lpmod = lp;
@@ -212,8 +202,6 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
     J = vpa(subs(Jsym,symvars,params));
     X = vpa(subs(Xsym,symvars,params));
     H = vpa(subs(Hsym,symvars,params));
-    K = vpa(subs(Kin_e,symvars,params));
-    P = vpa(subs(Pot_e,symvars,params));
     %Hd = vpa(subs(Hdsym,symvars,params));
 
     pointlocs = find(~logical(ParameterCell{2})); %find point masses
@@ -242,32 +230,18 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
         H = H(:,[1:pointloc-1 pointloc+1:numlinks]);
         H = subs(H,th(pointloc+1:end),th(pointloc:end-1));
         H = subs(H,th_d(:,pointloc+1:end),th_d(:,pointloc:end-1));
-        
-        K = subs(K,th(pointloc+1:end),th(pointloc:end-1));
-        K = subs(K,th_d(:,pointloc+1:end),th_d(:,pointloc:end-1));
-        
-        P = subs(P,th(pointloc+1:end),th(pointloc:end-1));
-        P = subs(P,th_d(:,pointloc+1:end),th_d(:,pointloc:end-1));
-        
-        th = subs(th,th(pointloc+1:end),th(pointloc:end-1));
-        th = [th(1:pointloc-1),th(pointloc+1:end)];
-        
-        th_d = subs(th_d,th_d(:,pointloc+1:end),th_d(:,pointloc:end-1));
-        th_d = [th_d(:,1:pointloc-1),th_d(:,pointloc+1:end)];
                 
         numlinks = numlinks-1;
         pointlocs = pointlocs - 1; %later locations have shifted up by one
     end
 
-    Mf = matlabFunction(M,'Vars',[th]);
-    Mpf = matlabFunction(Mp,'Vars',[th]);
-    Cf = matlabFunction(C,'Vars',[th]);
-    Tf = matlabFunction(T,'Vars',[g,gam,th]);
-    Jf = matlabFunction(J,'Vars',[th]);
-    Xf = matlabFunction(X,'Vars',[th]);
-    Hf = matlabFunction(H,'Vars',[th,th_d(3,:)]);
-    Kf = matlabFunction(K,'Vars',[th,th_d(3,:)]);
-    Pf = matlabFunction(P,'Vars',[g,gam,th]);
+    Mf = matlabFunction(M);
+    Mpf = matlabFunction(Mp);
+    Cf = matlabFunction(C);
+    Tf = matlabFunction(T);
+    Jf = matlabFunction(J);
+    Xf = matlabFunction(X);
+    Hf = matlabFunction(H);
 
     %save for later
     if (SaveBoolean)
@@ -276,6 +250,6 @@ function [Mf,Cf,Tf,Jf,Xf,Hf,numlinks,ParameterCell] = ChainBuilder(datafilename,
         else
             savename = sprintf('EOMs_%s_unlocked.mat',extractBefore(datafilename,'.txt'));
         end
-        save(savename,'Mf','Mpf','Cf','Tf','Jf','Xf','Hf','Kf','Pf','numlinks','ParameterCell');
+        save(savename,'Mf','Mpf','Cf','Tf','Jf','Xf','Hf','numlinks','ParameterCell');
     end
 end
