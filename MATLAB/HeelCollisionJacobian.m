@@ -1,53 +1,34 @@
-function [Xnew,steplength] = HeelCollisionJacobian(X,Mfunlocked,Mfcoll,Mfpost,Jfpost,Xf,numlinks,R)%,Hfpre,Hfpost)
-%HeelCollision calculates impact of heel strike
+function [Xnew,steplength,F] = HeelCollisionJacobian(X,Mf,Jf,Xf,numlinks,R)%,Hfpre,Hfpost)
+%returns new configuration, velocities, and contact force
 JointAngleCellPre = num2cell(X(1:numlinks));
 
 jointPositions = Xf(JointAngleCellPre{:});
-steplength = jointPositions(2,end) + (X(1))*R -(X(2) - pi)*R; %don't need to account for R as only y matters here
+X(numlinks) = wrapToPi(X(numlinks));
+steplength = jointPositions(2,end) + (X(1))*R -(X(numlinks) - pi)*R; %don't need to account for R as only y matters here
 
-%new angles are old angles in new coordinates
-theta1new = X(2) - pi;
-theta2new = X(1) - pi;
-theta3new = X(1) - pi;
-JointAngleCellPost = num2cell([theta1new,theta2new,theta3new]); %equivalent angles after collision (switch stance/swing)
-JointAngleCellColl = num2cell([X(1),X(1),X(2)]); %equivalent angles at instant of collision (unlocked stance knee)
+thetanew = fliplr(wrapToPi(X(1:numlinks)-pi)); %new angle is old-pi, then flipped so first is last etc.
 
-Mpost = Mfcoll(JointAngleCellPost{:});
+M = Mf(JointAngleCellPre{:}); %Inertia about old stance foot, in old coordinates
 
-J = Jfpost(JointAngleCellPost{:});
-J = J(1:3,:); %velocity Jacobian only
+J = Jf(JointAngleCellPre{:}); %Jacobian of old stance foot, in old coordinates
+J = J(1:2,:); %only consider translation in x and y for 2 dimensional system
 
-%current velocities (in current frame)
-omega1old_old = X(3);
-omega2old_old = X(4);
-omega3old_old = X(4);
+Omegapre = X(numlinks+1:end)';
 
-%current velocities (in new coordinates, th1 is new stance/old swing leg)
-omega1old_new = omega3old_old;
-omega2old_new = omega1old_old;
-omega3old_new = omega1old_old;
+lhs = [M, -J';J, zeros(size(J,1))];
+rhs = [M*Omegapre;zeros(size(J,1),1)];
 
-Omegapre = [omega1old_new;omega2old_new;omega3old_new];
+%infinite solutions exist to the above
+%find least norm solution (system seeks to minimize energy)
 
-% theta1new = X(2) - pi;
-% theta2new = X(1) - pi;
-% theta3new = X(1) - pi;
-% JointAngleCellNew = num2cell([theta1new,theta2new,theta2new]);
-% 
-% Mpost = Mfpost(JointAngleCellNew{:});
-% 
-% %equate angular velocity
-% Hpre = Mpre*Omegapre;
-% Omegapost = Mpost\Hpre;
-% 
-% omegacell = num2cell(Omegapost');
-% 
-% %disp(Hfpre(X(1),X(2),X(3),X(4)))
-% %disp(Hfpost(theta1new,theta2new,theta3new,omegacell{:}));
-% %fprintf('\n\n\n');
-% %pause();
-% 
-Xnew = [theta1new,theta2new,theta3new,Omegapost'];
+omegaF = lhs'*((lhs*lhs')\rhs);
+
+Omegapost_oldc = omegaF(1:numlinks,:); %new velocities in old coordinates;
+F = [omegaF(numlinks+1:end,:); 0];
+
+Omegapost = fliplr(Omegapost_oldc'); %coordinates are flipped
+
+Xnew = [thetanew,Omegapost];
 
 end
 

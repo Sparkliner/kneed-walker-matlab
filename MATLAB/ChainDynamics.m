@@ -1,4 +1,4 @@
-function [ X_d ] = ChainDynamics( ~, X, Mf, Cf, Tf, gval, gamval) %t is not used for now
+function [ X_d ] = ChainDynamics( t, X, Mf, Cf, Tf, Text, gval, gamval) %t is not used for now
 % Currently has issues if R = cm,x for first/last link
 numlinks = length(X)/2;
 Theta = X(1:numlinks);
@@ -11,7 +11,19 @@ if (numlinks > 1)
 else
     C = 0;
 end
+
+%left multiply by matrix:
+%[1, -1,  0]
+%[0,  1, -1]
+%[0,  0,  1]
+Tjoint = Text(t,X);
+Ttemp = [Tjoint(2:end,:);0];
+Tjoint = Tjoint - Ttemp;
+
+
+
 T = Tf(gval,gamval,ThetaCell{:});
+T = T + Tjoint;
 
 %M*Omega_d + C*Omega^2 = T
 Theta_d = Omega;

@@ -1,4 +1,4 @@
-function [ value, isterminal, direction ] = CheckCollision( ~, X, Xf, numlinks, gamval, R, RotMat, swingknee, swinghip)
+function [ value, isterminal, direction ] = CheckCollision( ~, X, Xf, numlinks, gamval, R, RotMat, swingknee, swinghip, checkKnee)
 %swingknee and swinghip are indices of knee joint and hip joint angles
 %FootCollision - To check if foot has touched the ground
 
@@ -22,7 +22,7 @@ isterminal(1,1) = 1;
 
 direction(1,1) = -1;
 
-if (numlinks > 2)
+if (checkKnee)
     %KneeCollision - To check for knee locking
     value(2,1) = X(swingknee) - X(swinghip); %typically 4 and 3
 

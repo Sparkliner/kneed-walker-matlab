@@ -17,21 +17,26 @@ nolockdat = load('EOMs_TestData_unlocked.mat'); %load functions of theta
 maxsteps = 5;
 R = nolockdat.ParameterCell{1}(1);
 gval = 9.81; %m/s^2
-gamval = 0;%rad %.02
+gamval = 0.25*pi;%rad %.02
 
-xmin = -2;
-xmax = 2;
-ymin = -2;
-ymax = 2;
+xmin = -5;
+xmax = 5;
+ymin = -5;
+ymax = 5;
 
 %Model positions are in terms of Location
 %Rotation matrix to bring things in terms of flat ground
 tmp = makehgtform('zrotate',gamval); %transform matrix
 RotMat = tmp(1:3,1:3); %take upper left 3x3
 
-nolockdynam = @(t,X) ChainDynamics(t,X,nolockdat.Mf,nolockdat.Cf,nolockdat.Tf,gval,gamval);
+%for testing
+%Text = @(t,X) [-6*gval;-3*gval;-1*gval];
+Text = @(t,X) [-3*gval;-1*gval];
+%Text = @(t,X) [-1*gval];
 
-X0 = [(0.75*pi)*ones(1, nolockdat.numlinks),zeros(1, nolockdat.numlinks)];
+nolockdynam = @(t,X) ChainDynamics(t,X,nolockdat.Mf,nolockdat.Cf,nolockdat.Tf,Text,gval,gamval);
+
+X0 = [(.25*pi)*ones(1, nolockdat.numlinks),zeros(1, nolockdat.numlinks)];
 tstep = 0.01;
 tspan = [0:tstep:25];
 
