@@ -23,6 +23,7 @@ function [ t,X,steptracker,lockflags,offset,Xend ] = KneeWalkerSolveStep(maxstep
     X = [];
     lockflags = [];
     numsteps = 0;
+    pastevent = 1; %assume we start with a heel strike
 
     while(numsteps < maxsteps)
         offset = [offset,[zeros(1,length(t1)-1);R.*X1(1:end-1,1)';zeros(1,length(t1)-1)]];
@@ -35,21 +36,25 @@ function [ t,X,steptracker,lockflags,offset,Xend ] = KneeWalkerSolveStep(maxstep
             Xnew = KneeCollision(Xe,onelockdat.Mf,twolockdat.Mf,onelockdat.numlinks);
 
             X = [X;[X1(1:end-1,:),zeros(size(X1,1)-1,size(X,2)-size(X1,2))]];
+            pastevent = ie;
             [t1, X1, te, Xe, ie] = ode45(twolockdynam,tspan,Xnew,twooptions);
         elseif (ie == 1) %foot strike event
             numsteps = numsteps + 1;
             lockflags = [lockflags,2*ones(1,length(t1)-1)];
             %[Xnew, steplength] = HeelCollision(Xe,onelockdat.Mf,onelockdat.Mf,twolockdat.Xf,twolockdat.numlinks,R);%,twolockdat.Hf,onelockdat.Hf);
-            [Xnew, steplength] = HeelCollision(Xe,twolockdat.Mpf,onelockdat.Mf,twolockdat.Xf,twolockdat.numlinks,R);
-            Xend = Xnew;
-            steptracker(length(t)+1) = steplength;
-
-            X1 = repelem(X1,1,[1 2 1 2]); %knee and hip share position and velocity
-            X = [X;[X1(1:end-1,:),zeros(size(X1,1)-1,size(X,2)-size(X1,2))]];
-            [t1, X1, te, Xe, ie] = ode45(onelockdynam,tspan,Xnew,oneoptions);
+                [Xnew, steplength] = HeelCollision(Xe,twolockdat.Mpf,onelockdat.Mf,twolockdat.Xf,twolockdat.numlinks,R);
+                Xend = Xnew;
+                steptracker(length(t)+1) = steplength;
+            if (pastevent == 2) %foot strike after knee strike
+                X1 = repelem(X1,1,[1 2 1 2]); %knee and hip share position and velocity
+                X = [X;[X1(1:end-1,:),zeros(size(X1,1)-1,size(X,2)-size(X1,2))]];
+                pastevent = ie;
+                [t1, X1, te, Xe, ie] = ode45(onelockdynam,tspan,Xnew,oneoptions);
+            else %foot strike after foot strike
+                X = [X;[X1(1:end-1,:),zeros(size(X1,1)-1,size(X,2)-size(X1,2))]];
+                return; %This means the robot will fall, so stop simulation
+            end
         end
     end
-
-
 end
 

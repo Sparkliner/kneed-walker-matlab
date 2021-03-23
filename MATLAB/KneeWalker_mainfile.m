@@ -1,7 +1,7 @@
 clear;
 close all;
 %% Generate new files
-choice = questdlg('Load new parameters or use existing?','Choose model data',...
+choice = questdlg('Load new parameters (overwrites existing) or use existing?','Choose model data',...
     'Load new','Use existing', 'Cancel',...
     'Use existing');
 switch choice
@@ -20,13 +20,13 @@ onelockdat = load('EOMs_WalkerData_1_locked.mat');
 twolockdat = load('EOMs_WalkerData_0_3_locked.mat');
 %collislockdat = load('EOMs_WalkerData_4_locked.mat');
 %% Numerical Simulation
-maxsteps = 2;
+maxsteps = 3;
 R = onelockdat.ParameterCell{1}(1);
 gval = 9.81; %m/s^2
 gamval = 0.05;%rad %.0456
 
-%X0 = [-0.2, 3*pi/4, 5*pi/4,1.5,-2,-3];
-X0 = [-0.2, 3*pi/4, 5*pi/4,1.6,-2,-2];
+%X0 = [-0.2, 3*pi/4, 5*pi/4,1.5,-2,-3]; %radius = 0.2
+X0 = [-0.2, 3*pi/4, 5*pi/4,1.5,-2,-3];
 tstep = 0.01;
 tspan = [0:tstep:20];
 

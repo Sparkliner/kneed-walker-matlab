@@ -3,6 +3,7 @@ function [Xnew,steplength] = HeelCollision(X,Mfpre,Mfpost,Xf,numlinks,R)%,Hfpre,
 JointAngleCellPre = num2cell(X(1:numlinks));
 
 jointPositions = Xf(JointAngleCellPre{:});
+X(2) = wrapToPi(X(2));
 steplength = jointPositions(2,end) + (X(1))*R -(X(2) - pi)*R; %don't need to account for R as only y matters here
 
 %new angles are old angles in new coordinates

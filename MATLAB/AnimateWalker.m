@@ -33,11 +33,12 @@ function [ ] = AnimateWalker(xmin,xmax,ymin,ymax,gamval,t,X,onelockdat,twolockda
 
         stepvector = stepvector +[0;steptracker(I);0]; 
 
+        
         if (lockflags(I) == 1) %knee is unlocked  
             JointAngleCell = num2cell(X(I,1:onelockdat.numlinks));
 
             %calculate using function and put in flat RF
-            jointPositions = [[R;0;0],onelockdat.Xf(JointAngleCell{:})];
+            jointPositions = onelockdat.Xf(JointAngleCell{:});
 
             currentjointposandvel(:,:,I) = [X(I,1:onelockdat.numlinks);X(I,onelockdat.numlinks+1:end)];
 
@@ -45,18 +46,24 @@ function [ ] = AnimateWalker(xmin,xmax,ymin,ymax,gamval,t,X,onelockdat,twolockda
             JointAngleCell = num2cell(X(I,1:twolockdat.numlinks));
 
             %calculate using function and put in flat RF
-            jointPositions = [[R;0;0],twolockdat.Xf(JointAngleCell{:})];
+            jointPositions = twolockdat.Xf(JointAngleCell{:});
 
             currentjointposandvel(:,:,I) = [X(I,1:onelockdat.numlinks);X(I,onelockdat.numlinks+1:end)];
             %currentjointposandvel(:,3) = currentjointposandvel(:,2);
         end
         %jointPositions(:,1)
         %jointPositions(:,end)
+        jointPositions = [[R;0;0],jointPositions];
+        footPositions = [jointPositions(:,1),jointPositions(:,end)];
+        jointPositions(:,1) = jointPositions(:,1) - [R*cos(JointAngleCell{1});R*sin(JointAngleCell{1});0];
+        jointPositions(:,end) = jointPositions(:,end) + [R*cos(JointAngleCell{end});R*sin(JointAngleCell{end});0];
+        
         jointPositions = RotMat*(jointPositions + stepvector + offset(:,I));
-
+        footPositions = RotMat*(footPositions + stepvector + offset(:,I));
+        
         %draw circles at feet
-        rectangle('Position',[jointPositions(2,1) - R, jointPositions(1,1) - R, 2*R, 2*R],'Curvature',[1 1]);
-        rectangle('Position',[jointPositions(2,end) - R, jointPositions(1,end) - R, 2*R, 2*R],'Curvature',[1 1]);
+        rectangle('Position',[footPositions(2,1) - R, footPositions(1,1) - R, 2*R, 2*R],'Curvature',[1 1],'LineStyle','-');
+        rectangle('Position',[footPositions(2,end) - R, footPositions(1,end) - R, 2*R, 2*R],'Curvature',[1 1],'LineStyle','-');
         plot(jointPositions(2,:),jointPositions(1,:)); %note x is "up" and y is "right"
         %disp(I)
 
@@ -92,6 +99,7 @@ function [ ] = AnimateWalker(xmin,xmax,ymin,ymax,gamval,t,X,onelockdat,twolockda
         plot(t(I),dot(currentjointposandvel(2,:,I),currentjointposandvel(2,:,I)),'.b');
 
         pause(.01);
+        %disp(I)
     end
 
 end
